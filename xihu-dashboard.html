@@ -286,6 +286,180 @@
         .detail-btn:hover {
             transform: scale(1.05);
         }
+        #chat-fab {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4ecdc4, #1890ff);
+            color: #fff;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(78,205,196,0.4);
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #chat-fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(78,205,196,0.6);
+        }
+        #chat-panel {
+            position: absolute;
+            bottom: 100px;
+            right: 30px;
+            width: 380px;
+            height: 500px;
+            background: rgba(0,0,0,0.92);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            border: 1px solid rgba(78,205,196,0.3);
+            z-index: 99;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        #chat-panel.show {
+            display: flex;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .chat-header {
+            padding: 16px 20px;
+            background: linear-gradient(135deg, rgba(78,205,196,0.2), rgba(24,144,255,0.2));
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-header h3 {
+            color: #fff;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .chat-header .close-chat {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-header .close-chat:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+        .message {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .message.bot {
+            background: rgba(78,205,196,0.15);
+            color: #fff;
+            border: 1px solid rgba(78,205,196,0.3);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        .message.user {
+            background: linear-gradient(135deg, #4ecdc4, #1890ff);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-input-area {
+            padding: 12px 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .chat-input {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 10px 16px;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+        .chat-input::placeholder {
+            color: rgba(255,255,255,0.4);
+        }
+        .chat-input:focus {
+            border-color: rgba(78,205,196,0.6);
+        }
+        .chat-send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4ecdc4, #1890ff);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .chat-send-btn:hover {
+            transform: scale(1.1);
+        }
+        .chat-quick-actions {
+            padding: 8px 16px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .quick-btn {
+            padding: 6px 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
+            color: rgba(255,255,255,0.8);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quick-btn:hover {
+            background: rgba(78,205,196,0.2);
+            border-color: rgba(78,205,196,0.5);
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -321,6 +495,27 @@
 
     <div id="loading">正在加载地图数据...</div>
     <div id="map-container"></div>
+
+    <button id="chat-fab" onclick="toggleChat()">
+        💬
+    </button>
+
+    <div id="chat-panel">
+        <div class="chat-header">
+            <h3>🤖 西湖智能导游</h3>
+            <button class="close-chat" onclick="toggleChat()">×</button>
+        </div>
+        <div class="chat-quick-actions">
+            <button class="quick-btn" onclick="sendQuickMessage('预测断桥')">预测断桥</button>
+            <button class="quick-btn" onclick="sendQuickMessage('路线 断桥 雷峰塔')">路线规划</button>
+            <button class="quick-btn" onclick="sendQuickMessage('帮助')">帮助</button>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-area">
+            <input type="text" class="chat-input" id="chat-input" placeholder="输入问题，如：预测断桥" onkeypress="handleChatKeypress(event)">
+            <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+        </div>
+    </div>
 
     <div id="detail-panel">
         <div class="panel-header">
@@ -827,6 +1022,233 @@
 
         function closeDetailPanel() {
             document.getElementById('detail-panel').classList.remove('show');
+        }
+
+        const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
+        let chatHistory = [];
+
+        function toggleChat() {
+            const panel = document.getElementById('chat-panel');
+            panel.classList.toggle('show');
+            
+            if (panel.classList.contains('show') && chatHistory.length === 0) {
+                addBotMessage('你好！👋 我是西湖景区智能导游。\n\n我可以帮您：\n📊 预测景点客流（输入：预测断桥）\n🗺️ 规划游览路线（输入：路线 断桥 雷峰塔）\n\n有什么可以帮您的吗？');
+            }
+        }
+
+        function addBotMessage(text) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message bot';
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            chatHistory.push({ role: 'bot', text });
+        }
+
+        function addUserMessage(text) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message user';
+            msgDiv.textContent = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            chatHistory.push({ role: 'user', text });
+        }
+
+        function addTypingIndicator() {
+            const messagesDiv = document.getElementById('chat-messages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typing-indicator';
+            typingDiv.textContent = '正在思考...';
+            messagesDiv.appendChild(typingDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+        }
+
+        function handleChatKeypress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function sendQuickMessage(text) {
+            document.getElementById('chat-input').value = text;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addUserMessage(message);
+            input.value = '';
+            addTypingIndicator();
+
+            try {
+                const response = await fetch(`${API_BASE}/chat/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                const result = await response.json();
+                removeTypingIndicator();
+                
+                addBotMessage(result.reply);
+                
+                if (result.data) {
+                    handleChatData(result.intent, result.data);
+                }
+            } catch (error) {
+                removeTypingIndicator();
+                addBotMessage('抱歉，网络连接出了点问题，请稍后再试~');
+            }
+        }
+
+        function handleChatData(intent, data) {
+            if (intent === 'PREDICT' && data.predictions) {
+                openPredictDetail(data);
+            } else if (intent === 'ROUTE' && data.path) {
+                highlightRoute(data.path);
+            }
+        }
+
+        let predictChartInstance = null;
+        
+        function openPredictDetail(predictionData) {
+            const spot = predictionData.spot;
+            const predictions = predictionData.predictions;
+            
+            closeDetailPanel();
+            
+            const times = predictions.map(p => p.time);
+            const crowds = predictions.map(p => p.crowd);
+            
+            const panel = document.getElementById('detail-panel');
+            const title = document.getElementById('panel-title');
+            const current = document.getElementById('panel-current');
+            const capacity = document.getElementById('panel-capacity');
+            const saturation = document.getElementById('panel-saturation');
+            const peak = document.getElementById('panel-peak');
+            const rank = document.getElementById('panel-rank');
+            const trend = document.getElementById('panel-trend');
+            const status = document.getElementById('panel-status');
+            const suggestion = document.getElementById('panel-suggestion');
+            const suggestionText = document.getElementById('panel-suggestion-text');
+            
+            title.textContent = `${spot.name} - 客流预测`;
+            current.textContent = predictionData.currentCrowd.toLocaleString();
+            capacity.textContent = spot.capacity.toLocaleString();
+            saturation.textContent = (predictionData.peak.saturation).toFixed(1) + '%';
+            peak.textContent = predictionData.peak.crowd.toLocaleString();
+            rank.textContent = '预测';
+            trend.textContent = '2h';
+            trend.className = 'value';
+            status.textContent = predictionData.peak.crowd > spot.capacity * 0.67 ? '拥挤预警' : '正常';
+            status.style.color = predictionData.peak.crowd > spot.capacity * 0.67 ? '#ff4d4f' : '#52c41a';
+            suggestion.textContent = predictionData.peak.time;
+            
+            suggestionText.textContent = `预计未来2小时峰值出现在${predictionData.peak.time}，峰值约${predictionData.peak.crowd}人（饱和度${predictionData.peak.saturation}%）。请合理安排游览时间。`;
+            
+            if (!predictChartInstance) {
+                predictChartInstance = echarts.init(document.getElementById('chart-container'));
+            }
+            
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    borderColor: 'rgba(78,205,196,0.3)',
+                    textStyle: { color: '#fff' },
+                    formatter: function(params) {
+                        const data = params[0];
+                        return `${data.name}<br/>预测人流: <strong>${data.value}</strong> 人`;
+                    }
+                },
+                grid: {
+                    left: '3%', right: '4%', bottom: '3%', top: '10%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: times,
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10 },
+                    splitLine: { show: false }
+                },
+                yAxis: {
+                    type: 'value',
+                    max: spot.capacity,
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10 },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+                },
+                series: [{
+                    name: '预测人流',
+                    type: 'line',
+                    data: crowds,
+                    smooth: true,
+                    symbol: 'circle',
+                    symbolSize: 6,
+                    lineStyle: { color: '#faad14', width: 3 },
+                    itemStyle: { color: '#faad14', borderWidth: 2, borderColor: '#fff' },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: 'rgba(250,173,20,0.4)' },
+                            { offset: 1, color: 'rgba(250,173,20,0.05)' }
+                        ])
+                    },
+                    markPoint: {
+                        data: [
+                            { type: 'max', name: '峰值', itemStyle: { color: '#ff4d4f' } }
+                        ],
+                        label: { color: '#fff', fontSize: 10 }
+                    }
+                }]
+            };
+            
+            predictChartInstance.setOption(option);
+            panel.classList.add('show');
+        }
+
+        let routeMarkers = [];
+        let routeLines = [];
+
+        function highlightRoute(path) {
+            closeDetailPanel();
+            
+            routeMarkers.forEach(m => map.remove(m));
+            routeMarkers = [];
+            routeLines.forEach(l => map.remove(l));
+            routeLines = [];
+            
+            const pathCoords = path.map(s => [s.lng, s.lat]);
+            
+            const line = new AMap.Polyline({
+                path: pathCoords,
+                strokeColor: '#4ecdc4',
+                strokeWeight: 4,
+                strokeOpacity: 0.8,
+                strokeStyle: 'solid',
+                showDir: true
+            });
+            map.add(line);
+            routeLines.push(line);
+            
+            const bounds = new AMap.Bounds(
+                [Math.min(...pathCoords.map(p => p[0])), Math.min(...pathCoords.map(p => p[1]))],
+                [Math.max(...pathCoords.map(p => p[0])), Math.max(...pathCoords.map(p => p[1]))]
+            );
+            map.setBounds(bounds, true, [60, 60, 60, 60]);
         }
     </script>
 </body>

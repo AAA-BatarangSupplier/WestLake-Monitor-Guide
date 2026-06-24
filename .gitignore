@@ -155,3 +155,7 @@ vite.config.ts.timestamp-*
 # Server files
 server.ps1
 simple-server.ps1
+
+# Backend
+backend/.env
+backend/node_modules/
