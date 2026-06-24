@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>西湖景区实时客流看板</title>
     <script src="https://webapi.amap.com/maps?v=2.0&key=ffd74ab3f94bb8b9c9fe9acfd3366848"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -137,6 +138,154 @@
             0% { width: 100%; height: 100%; opacity: 0.8; transform: scale(1); }
             100% { width: 300%; height: 300%; opacity: 0; transform: scale(1.5); }
         }
+        #detail-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.9);
+            backdrop-filter: blur(10px);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 24px;
+            color: #fff;
+            z-index: 50;
+            transform: translateY(100%);
+            transition: transform 0.4s ease;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        #detail-panel.show {
+            transform: translateY(0);
+        }
+        #detail-panel .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        #detail-panel .panel-header h2 {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        #detail-panel .close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #detail-panel .close-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        #detail-panel .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        #detail-panel .stat-item {
+            background: rgba(255,255,255,0.05);
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        #detail-panel .stat-item .label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 8px;
+        }
+        #detail-panel .stat-item .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4ecdc4;
+        }
+        #detail-panel .stat-item .value.up {
+            color: #52c41a;
+        }
+        #detail-panel .stat-item .value.down {
+            color: #ff4d4f;
+        }
+        #detail-panel .stat-item .value.flat {
+            color: #faad14;
+        }
+        #detail-panel .chart-section {
+            background: rgba(255,255,255,0.05);
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+        #detail-panel .chart-section h3 {
+            font-size: 14px;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 12px;
+        }
+        #chart-container {
+            width: 100%;
+            height: 250px;
+        }
+        #detail-panel .suggestion-box {
+            background: linear-gradient(135deg, rgba(78,205,196,0.1), rgba(24,144,255,0.1));
+            border: 1px solid rgba(78,205,196,0.3);
+            padding: 16px;
+            border-radius: 12px;
+        }
+        #detail-panel .suggestion-box h3 {
+            font-size: 14px;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+        }
+        #detail-panel .suggestion-box p {
+            font-size: 13px;
+            color: rgba(255,255,255,0.8);
+            line-height: 1.6;
+        }
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        .trend-indicator.up {
+            background: rgba(82,196,26,0.2);
+            color: #52c41a;
+        }
+        .trend-indicator.down {
+            background: rgba(255,77,79,0.2);
+            color: #ff4d4f;
+        }
+        .trend-indicator.flat {
+            background: rgba(250,173,20,0.2);
+            color: #faad14;
+        }
+        .detail-btn {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, #4ecdc4, #1890ff);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .detail-btn:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -172,6 +321,55 @@
 
     <div id="loading">正在加载地图数据...</div>
     <div id="map-container"></div>
+
+    <div id="detail-panel">
+        <div class="panel-header">
+            <h2 id="panel-title">景点详情</h2>
+            <button class="close-btn" onclick="closeDetailPanel()">×</button>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="label">当前人流</div>
+                <div class="value" id="panel-current">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">承载上限</div>
+                <div class="value" id="panel-capacity">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">饱和度</div>
+                <div class="value" id="panel-saturation">0%</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">今日峰值</div>
+                <div class="value" id="panel-peak">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">当前排名</div>
+                <div class="value" id="panel-rank">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">1小时变化</div>
+                <div class="value" id="panel-trend">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">状态</div>
+                <div class="value" id="panel-status">--</div>
+            </div>
+            <div class="stat-item">
+                <div class="label">建议时段</div>
+                <div class="value" id="panel-suggestion">--</div>
+            </div>
+        </div>
+        <div class="chart-section">
+            <h3>过去24小时人流趋势</h3>
+            <div id="chart-container"></div>
+        </div>
+        <div class="suggestion-box">
+            <h3>游览建议</h3>
+            <p id="panel-suggestion-text">点击地图上的景点查看详细建议</p>
+        </div>
+    </div>
 
     <script>
         const SPOTS = [
@@ -241,6 +439,83 @@
             return { data, totalVisitors, crowdedCount, smoothCount };
         }
 
+        function generateHistoryData(spotId, capacity, currentCrowd) {
+            const hours = [];
+            const values = [];
+            const now = new Date();
+            const currentHour = now.getHours();
+            const pop = POPULARITY[spotId] || 1.0;
+            
+            let maxValue = 0;
+
+            for (let i = 23; i >= 0; i--) {
+                const h = (currentHour - i + 24) % 24;
+                hours.push(`${h.toString().padStart(2, '0')}:00`);
+                
+                let baseFactor;
+                if (h >= 6 && h < 8) baseFactor = 0.15;
+                else if (h >= 8 && h < 10) baseFactor = 0.35;
+                else if (h >= 10 && h < 12) baseFactor = 0.55;
+                else if (h >= 12 && h < 14) baseFactor = 0.70;
+                else if (h >= 14 && h < 17) baseFactor = 0.90;
+                else if (h >= 17 && h < 19) baseFactor = 0.70;
+                else if (h >= 19 && h < 21) baseFactor = 0.40;
+                else if (h >= 21 && h < 23) baseFactor = 0.15;
+                else baseFactor = 0.05;
+
+                let value;
+                if (i === 0) {
+                    value = currentCrowd;
+                } else {
+                    const randomFactor = 0.8 + Math.random() * 0.4;
+                    value = Math.floor(capacity * baseFactor * randomFactor * pop);
+                    value = Math.min(value, capacity);
+                    value = Math.max(value, Math.floor(capacity * 0.02));
+                }
+
+                if (value > maxValue) maxValue = value;
+                values.push(value);
+            }
+
+            return { hours, values, maxValue };
+        }
+
+        function getTrendInfo(current, historyData) {
+            if (!historyData || historyData.values.length < 2) {
+                return { trend: 'flat', percent: 0 };
+            }
+            const oneHourAgo = historyData.values[historyData.values.length - 2];
+            if (oneHourAgo === 0) return { trend: 'flat', percent: 0 };
+            const change = current - oneHourAgo;
+            const percent = ((change / oneHourAgo) * 100).toFixed(1);
+            let trend = 'flat';
+            if (change > 5) trend = 'up';
+            else if (change < -5) trend = 'down';
+            return { trend, percent: parseFloat(percent), change };
+        }
+
+        function getSuggestedTime(capacity) {
+            const now = new Date().getHours();
+            const suggestions = [
+                { start: 6, end: 9, label: '6:00-9:00' },
+                { start: 13, end: 14, label: '13:00-14:00' },
+                { start: 20, end: 22, label: '20:00-22:00' }
+            ];
+            
+            for (const s of suggestions) {
+                if (now < s.start || now >= s.end) {
+                    return s.label;
+                }
+            }
+            return '13:00-14:00';
+        }
+
+        function getRank(currentCrowd, allData) {
+            const sorted = [...allData].sort((a, b) => b.crowd - a.crowd);
+            const rank = sorted.findIndex(s => s.id === currentCrowd.id) + 1;
+            return `${rank}/${sorted.length}`;
+        }
+
         function updateStats(result) {
             document.getElementById('total-visitors').textContent = result.totalVisitors.toLocaleString();
             document.getElementById('crowded-count').textContent = result.crowdedCount;
@@ -257,6 +532,9 @@
         let markers = [];
         let infoWindow = null;
         let refreshTimer = null;
+        let chartInstance = null;
+        let currentSpotData = null;
+        let cachedHistoryData = {};
 
         function createMarker(spotData) {
             const ratio = spotData.crowd / spotData.capacity;
@@ -268,6 +546,7 @@
             markerDiv.style.height = size + 'px';
             markerDiv.style.backgroundColor = spotData.status.color;
             markerDiv.style.color = spotData.status.color;
+            markerDiv.__spotData = spotData;
             
             const rippleDiv = document.createElement('div');
             rippleDiv.className = 'ripple';
@@ -290,6 +569,16 @@
 
             markerDiv.addEventListener('click', function() {
                 const ratio = (spotData.crowd / spotData.capacity * 100).toFixed(1);
+                const historyData = generateHistoryData(spotData.id, spotData.capacity, spotData.crowd);
+                cachedHistoryData[spotData.id] = historyData;
+                currentSpotData = spotData;
+                
+                const trendInfo = getTrendInfo(spotData.crowd, historyData);
+                
+                const trendIcon = trendInfo.trend === 'up' ? '↑' : trendInfo.trend === 'down' ? '↓' : '→';
+                const trendClass = trendInfo.trend;
+                const trendPercent = trendInfo.percent >= 0 ? `+${trendInfo.percent}%` : `${trendInfo.percent}%`;
+
                 const content = `
                     <div style="font-weight:bold;font-size:15px;margin-bottom:8px;color:#fff;">${spotData.name}</div>
                     <div style="line-height:1.8;font-size:13px;">
@@ -298,6 +587,12 @@
                         <span style="color:#aaa;">饱和度:</span> ${ratio}%<br/>
                         <span style="color:#aaa;">状态:</span> <span style="color:${spotData.status.color};font-weight:bold;">${spotData.status.label}</span>
                     </div>
+                    <div class="trend-indicator ${trendClass}" style="margin-top:8px;">
+                        ${trendIcon} 相比1小时前 ${trendPercent}
+                    </div>
+                    <button class="detail-btn" onclick="showDetailPanel('${spotData.id}')">
+                        查看详情
+                    </button>
                 `;
                 infoWindow.setContent(content);
                 infoWindow.open(map, [spotData.lng, spotData.lat]);
@@ -375,9 +670,164 @@
 
         window.addEventListener('resize', () => {
             if (map) map.resize();
+            if (chartInstance) chartInstance.resize();
         });
 
         window.addEventListener('beforeunload', stopRealtimeUpdate);
+
+        let currentDetailData = null;
+
+        function renderChart(hours, values, currentHour, capacity) {
+            const chartDom = document.getElementById('chart-container');
+            if (!chartDom) return;
+
+            if (!chartInstance) {
+                chartInstance = echarts.init(chartDom);
+            }
+
+            const now = new Date();
+            const currentIndex = hours.length - 1;
+            
+            const markLineData = [];
+            hours.forEach((h, i) => {
+                if (h === '09:00' || h === '10:00') {
+                    markLineData.push({ xAxis: i, lineStyle: { color: '#ff4d4f', width: 2, type: 'dashed' }, label: { formatter: '早高峰', color: '#ff4d4f', fontSize: 10 } });
+                }
+                if (h === '17:00' || h === '18:00') {
+                    markLineData.push({ xAxis: i, lineStyle: { color: '#faad14', width: 2, type: 'dashed' }, label: { formatter: '晚高峰', color: '#faad14', fontSize: 10 } });
+                }
+            });
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    borderColor: 'rgba(78,205,196,0.3)',
+                    textStyle: { color: '#fff' },
+                    formatter: function(params) {
+                        const data = params[0];
+                        return `${data.name}<br/>人流量: <strong>${data.value}</strong> 人`;
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    top: '10%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: hours,
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10 },
+                    splitLine: { show: false }
+                },
+                yAxis: {
+                    type: 'value',
+                    max: capacity,
+                    axisLine: { lineStyle: { color: 'rgba(255,255,255,0.2)' } },
+                    axisLabel: { color: 'rgba(255,255,255,0.6)', fontSize: 10 },
+                    splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+                },
+                series: [
+                    {
+                        name: '人流量',
+                        type: 'line',
+                        data: values,
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 6,
+                        lineStyle: { color: '#4ecdc4', width: 3 },
+                        itemStyle: { color: '#4ecdc4', borderWidth: 2, borderColor: '#fff' },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                { offset: 0, color: 'rgba(78,205,196,0.4)' },
+                                { offset: 1, color: 'rgba(78,205,196,0.05)' }
+                            ])
+                        },
+                        markPoint: {
+                            data: [
+                                { type: 'max', name: '峰值', itemStyle: { color: '#ff4d4f' } },
+                                { coord: [currentIndex, values[currentIndex]], name: '当前', itemStyle: { color: '#fff', borderColor: '#4ecdc4', borderWidth: 3 } }
+                            ],
+                            label: { color: '#fff', fontSize: 10 }
+                        },
+                        markLine: {
+                            data: markLineData
+                        }
+                    }
+                ]
+            };
+
+            chartInstance.setOption(option);
+        }
+
+        function showDetailPanel(spotId) {
+            infoWindow.close();
+            
+            const spotData = currentSpotData;
+            const historyData = cachedHistoryData[spotId];
+            
+            if (!spotData || !historyData) return;
+            
+            const { crowd, capacity, name, status } = spotData;
+            const saturation = (crowd / capacity * 100).toFixed(1);
+            const trendInfo = getTrendInfo(crowd, historyData);
+            const suggestedTime = getSuggestedTime(capacity);
+
+            document.getElementById('panel-title').textContent = `${name} - 详情`;
+            document.getElementById('panel-current').textContent = crowd.toLocaleString();
+            document.getElementById('panel-capacity').textContent = capacity.toLocaleString();
+            document.getElementById('panel-saturation').textContent = saturation + '%';
+            document.getElementById('panel-peak').textContent = historyData.maxValue.toLocaleString();
+            
+            const allData = markers.map(m => {
+                const div = m.getContent();
+                if (div && div.__spotData) return div.__spotData;
+                return null;
+            }).filter(Boolean);
+            
+            let rank = '--';
+            if (allData.length > 0) {
+                const sorted = [...allData].sort((a, b) => b.crowd - a.crowd);
+                const idx = sorted.findIndex(s => s.id === spotId);
+                if (idx >= 0) rank = `${idx + 1}/${sorted.length}`;
+            }
+            document.getElementById('panel-rank').textContent = rank;
+            
+            const trendEl = document.getElementById('panel-trend');
+            const trendIcon = trendInfo.trend === 'up' ? '↑' : trendInfo.trend === 'down' ? '↓' : '→';
+            const trendPercent = trendInfo.percent >= 0 ? `+${trendInfo.percent}%` : `${trendInfo.percent}%`;
+            trendEl.textContent = `${trendIcon} ${trendPercent}`;
+            trendEl.className = 'value ' + trendInfo.trend;
+            
+            const statusEl = document.getElementById('panel-status');
+            statusEl.textContent = status.label;
+            statusEl.style.color = status.color;
+            
+            document.getElementById('panel-suggestion').textContent = suggestedTime;
+
+            let suggestionText = '';
+            const ratio = crowd / capacity;
+            if (ratio > 0.67) {
+                suggestionText = `${name}当前较为拥挤，建议您选择${suggestedTime}时段前往，此时游客较少，游览体验更佳。您也可以考虑前往湖滨或苏堤等相对畅通的景点。`;
+            } else if (ratio > 0.4) {
+                suggestionText = `${name}当前人流适中，适合游览。如果您偏好更安静的环境，建议在${suggestedTime}时段到访。`;
+            } else {
+                suggestionText = `${name}当前游客较少，是游览的好时机！建议您把握当前时段前往，避免错过最佳游览体验。`;
+            }
+            document.getElementById('panel-suggestion-text').textContent = suggestionText;
+
+            renderChart(historyData.hours, historyData.values, new Date().getHours(), capacity);
+
+            document.getElementById('detail-panel').classList.add('show');
+        }
+
+        function closeDetailPanel() {
+            document.getElementById('detail-panel').classList.remove('show');
+        }
     </script>
 </body>
 </html>
