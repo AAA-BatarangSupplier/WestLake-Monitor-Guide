@@ -327,6 +327,8 @@ Content-Type: application/json
 
 MIT License
 
+## 📘 本项目是浙江树人学院《人工智能》课程大作业
+
 ## 🙏 致谢
 
 - [高德地图](https://lbs.amap.com/) - 地图服务
