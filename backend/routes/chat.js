@@ -34,8 +34,11 @@ function parseIntent(message) {
     const routePatterns = [
       /从(.+?)到(.+)/,
       /(.+?)到(.+)/,
-      /路线[：:\s]*(.+?)[到\s]+(.+)/,
-      /规划[：:\s]*(.+?)[到\s]+(.+)/
+      /路线[：:\s]+(.+?)\s+(.+)/,
+      /规划[：:\s]+(.+?)\s+(.+)/,
+      /路线\s+(.+?)\s+(.+)/,
+      /导航\s+(.+?)\s+(.+)/,
+      /怎么走\s+(.+?)\s+(.+)/
     ];
     
     for (const pattern of routePatterns) {
@@ -49,6 +52,20 @@ function parseIntent(message) {
           from = fromSpot.name;
           to = toSpot.name;
           break;
+        }
+      }
+    }
+    
+    // 新增：支持"路线 景点1 景点2"格式
+    if (!from && !to) {
+      const simplePattern = /^路线\s+(.+?)\s+(.+)$/;
+      const simpleMatch = message.match(simplePattern);
+      if (simpleMatch) {
+        const fromSpot = findSpotByName(simpleMatch[1].trim());
+        const toSpot = findSpotByName(simpleMatch[2].trim());
+        if (fromSpot && toSpot) {
+          from = fromSpot.name;
+          to = toSpot.name;
         }
       }
     }
@@ -128,7 +145,25 @@ router.post('/send', async (req, res) => {
 
     case 'ROUTE':
       if (!from || !to) {
-        reply = '请告诉我您的起点和终点，我来为您规划路线~\n\n格式：路线 [起点] [终点]\n示例：路线 断桥 雷峰塔';
+        // 自动从消息中提取景点名称
+        const routeMatch = message.match(/^路线\s+(.+?)\s+(.+)$/);
+        if (routeMatch) {
+          from = findSpotByName(routeMatch[1].trim())?.name;
+          to = findSpotByName(routeMatch[2].trim())?.name;
+        }
+        
+        // 尝试其他格式
+        if (!from || !to) {
+          const otherMatch = message.match(/(.+?)到(.+)/);
+          if (otherMatch) {
+            from = findSpotByName(otherMatch[1].trim())?.name;
+            to = findSpotByName(otherMatch[2].trim())?.name;
+          }
+        }
+      }
+      
+      if (!from || !to) {
+        reply = '请提供完整的起点和终点信息~\n\n可用景点：断桥、苏堤、雷峰塔、灵隐寺、三潭印月、湖滨、太子湾、曲院风荷、白堤、花港观鱼、岳王庙、柳浪闻莺、平湖秋月、孤山、西泠印社\n\n示例：路线 断桥 雷峰塔\n从岳王庙到柳浪闻莺怎么走';
       } else {
         const fromSpot = findSpotByName(from);
         const toSpot = findSpotByName(to);
