@@ -70,11 +70,14 @@ function parseIntent(message) {
 router.post('/send', async (req, res) => {
   const { message } = req.body;
   
+  console.log('[Chat] 收到消息:', message);
+  
   if (!message || message.trim() === '') {
     return res.json({ reply: '请输入您的问题~', intent: 'UNKNOWN' });
   }
 
   const { intent, spotName, from, to } = parseIntent(message);
+  console.log('[Chat] 识别意图:', intent, '景点:', spotName, '起点:', from, '终点:', to);
   const mockData = generateMockData();
   let reply = '';
   let data = null;

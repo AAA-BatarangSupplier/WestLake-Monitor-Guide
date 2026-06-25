@@ -1,9 +1,20 @@
 async function callLLM(prompt, systemPrompt = '你是一个景区客流分析专家。') {
+  const provider = process.env.LLM_PROVIDER || 'dashscope';
+  
+  if (provider === 'dashscope') {
+    return await callDashScopeLLM(prompt, systemPrompt);
+  } else {
+    return await callOpenAILLM(prompt, systemPrompt);
+  }
+}
+
+async function callOpenAILLM(prompt, systemPrompt) {
   const apiKey = process.env.OPENAI_API_KEY;
   const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
   const model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
 
   if (!apiKey || apiKey === 'your_api_key_here') {
+    console.warn('OpenAI API key not configured');
     return null;
   }
 
@@ -26,14 +37,66 @@ async function callLLM(prompt, systemPrompt = '你是一个景区客流分析专
     });
 
     if (!response.ok) {
-      console.error('LLM API调用失败:', response.status);
+      const errorText = await response.text();
+      console.error('OpenAI API调用失败:', response.status, errorText);
       return null;
     }
 
     const data = await response.json();
     return data.choices[0]?.message?.content || null;
   } catch (error) {
-    console.error('LLM调用异常:', error.message);
+    console.error('OpenAI调用异常:', error.message);
+    return null;
+  }
+}
+
+async function callDashScopeLLM(prompt, systemPrompt) {
+  const apiKey = process.env.DASHSCOPE_API_KEY;
+  const baseUrl = process.env.DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+  const model = process.env.DASHSCOPE_MODEL || 'qwen3.6-flash';
+
+  if (!apiKey || apiKey === 'your_dashscope_api_key_here') {
+    console.warn('DashScope API key not configured');
+    return null;
+  }
+
+  try {
+    console.log(`[DashScope] 正在调用模型: ${model}`);
+    console.log(`[DashScope] 请求URL: ${baseUrl}/chat/completions`);
+    
+    const response = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 200
+      })
+    });
+
+    console.log(`[DashScope] 响应状态码: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('DashScope API调用失败:', response.status);
+      console.error('错误详情:', errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    console.log(`[DashScope] 响应数据:`, JSON.stringify(data, null, 2));
+    
+    return data.choices[0]?.message?.content || null;
+  } catch (error) {
+    console.error('DashScope调用异常:', error.message);
+    console.error('异常详情:', error);
     return null;
   }
 }
@@ -69,6 +132,8 @@ function generateRouteDescription(path) {
 
 module.exports = {
   callLLM,
+  callOpenAILLM,
+  callDashScopeLLM,
   generatePredictWarning,
   generateRouteDescription
 };
